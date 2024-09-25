@@ -17,13 +17,13 @@ const mapContainerStyle = {
   height: '500px',
 };
 
-const center = {
-  lat: 37.7749, // Default to San Francisco
+const defaultCenter = {
+  lat: 37.7749, // San Francisco
   lng: -122.4194,
 };
 
 const options = {
-  disableDefaultUI: true,
+  disableDefaultUI: false,
   zoomControl: true,
 };
 
@@ -33,11 +33,11 @@ export default function MapComponent({ onCoordinatesSelect }) {
     libraries,
   });
 
-  const [selected, setSelected] = useState(null);
   const [mapRef, setMapRef] = useState(null);
   const [autocomplete, setAutocomplete] = useState(null);
   const [streetViewVisible, setStreetViewVisible] = useState(false);
   const [panoramaCoords, setPanoramaCoords] = useState(null);
+  const panoramaRef = useRef(null);
 
   const onMapLoad = useCallback((map) => {
     setMapRef(map);
@@ -53,6 +53,11 @@ export default function MapComponent({ onCoordinatesSelect }) {
       if (place.geometry) {
         mapRef.panTo(place.geometry.location);
         mapRef.setZoom(14);
+        setStreetViewVisible(true);
+        setPanoramaCoords({
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+        });
       } else {
         alert('No details available for input: \'' + place.name + '\'');
       }
@@ -64,29 +69,39 @@ export default function MapComponent({ onCoordinatesSelect }) {
   const handleMapClick = (event) => {
     const lat = event.latLng.lat();
     const lng = event.latLng.lng();
-    setSelected({ lat, lng });
     setPanoramaCoords({ lat, lng });
     setStreetViewVisible(true);
   };
 
-  const handleStreetViewClose = () => {
-    setStreetViewVisible(false);
-    setSelected(null);
+  const handlePanoramaPositionChanged = () => {
+    if (panoramaRef.current) {
+      const position = panoramaRef.current.position;
+      if (position) {
+        const lat = position.lat();
+        const lng = position.lng();
+        setPanoramaCoords({ lat, lng });
+        if (onCoordinatesSelect) {
+          onCoordinatesSelect({ lat, lng });
+        }
+      }
+    }
   };
 
   const handleSubmit = () => {
     if (panoramaCoords) {
-      console.log('Selected Coordinates:', panoramaCoords);
-      if (onCoordinatesSelect) {
-        onCoordinatesSelect(panoramaCoords);
-      }
+      console.log('Submitted Coordinates:', panoramaCoords);
+      // Additional actions can be performed here, such as sending coordinates to the backend
     } else {
       console.log('No coordinates selected.');
     }
   };
 
-  if (loadError) return <div>Error loading maps</div>;
-  if (!isLoaded) return <div>Loading Maps</div>;
+  const handleCloseStreetView = () => {
+    setStreetViewVisible(false);
+  };
+
+  if (loadError) return <div className="text-red-500">Error loading maps</div>;
+  if (!isLoaded) return <div className="text-blue-500">Loading Maps...</div>;
 
   return (
     <div className="w-full">
@@ -95,39 +110,55 @@ export default function MapComponent({ onCoordinatesSelect }) {
           <input
             type="text"
             placeholder="Search location..."
-            className="w-full p-2 border rounded"
+            className="w-full p-3 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           />
         </Autocomplete>
       </div>
       <GoogleMap
         mapContainerStyle={mapContainerStyle}
         zoom={8}
-        center={center}
+        center={defaultCenter}
         options={options}
         onClick={handleMapClick}
         onLoad={onMapLoad}
       >
-        {selected && <Marker position={{ lat: selected.lat, lng: selected.lng }} />}
+        {panoramaCoords && <Marker position={panoramaCoords} />}
         {streetViewVisible && panoramaCoords && (
           <StreetViewPanorama
+            ref={panoramaRef}
             position={panoramaCoords}
             visible={streetViewVisible}
             options={{
-              disableDefaultUI: true,
+              disableDefaultUI: false,
               enableCloseButton: true,
+              linksControl: true,
+              panControl: true,
+              zoomControl: true,
             }}
-            onCloseclick={handleStreetViewClose}
+            onPositionChanged={handlePanoramaPositionChanged}
+            onCloseclick={handleCloseStreetView}
           />
         )}
       </GoogleMap>
       <div className="mt-4 flex justify-center">
         <button
           onClick={handleSubmit}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+          className="bg-green-500 text-white px-6 py-3 rounded-lg shadow hover:bg-green-600 transition duration-200"
         >
           Submit Coordinates
         </button>
       </div>
+      {panoramaCoords && (
+        <div className="mt-4 p-6 bg-white rounded-lg shadow-md max-w-4xl mx-auto">
+          <h2 className="text-2xl font-semibold mb-4 text-blue-700">Selected Coordinates:</h2>
+          <p className="text-lg text-gray-700">
+            <span className="font-medium text-black">Latitude:</span> {panoramaCoords.lat}
+          </p>
+          <p className="text-lg text-gray-700">
+            <span className="font-medium text-black">Longitude:</span> {panoramaCoords.lng}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
