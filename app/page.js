@@ -3,14 +3,26 @@
 
 import React, { useState } from 'react';
 import MapComponent from './components/Map';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const [selectedCoords, setSelectedCoords] = useState(null);
 
   const handleCoordinatesSelect = (coords) => {
     console.log('Coordinates from Parent:', coords);
     setSelectedCoords(coords);
-    // Additional actions can be performed here, such as sending the coordinates to your backend
+  };
+
+  const handleSubmit = () => {
+    if (selectedCoords) {
+      // Redirect to Panorama Page with coordinates as query parameters
+      router.push(
+        `/panorama?latitude=${selectedCoords.lat}&longitude=${selectedCoords.lng}`
+      );
+    } else {
+      console.log('No coordinates selected.');
+    }
   };
 
   return (
@@ -30,6 +42,14 @@ export default function Home() {
           </p>
         </div>
       )}
+      <div className="mt-6">
+        <button
+          onClick={handleSubmit}
+          className="bg-blue-500 text-white px-6 py-3 rounded-lg shadow hover:bg-blue-600 transition duration-200"
+        >
+          Submit Coordinates
+        </button>
+      </div>
     </div>
   );
 }

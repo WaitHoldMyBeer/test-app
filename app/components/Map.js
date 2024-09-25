@@ -58,6 +58,10 @@ export default function MapComponent({ onCoordinatesSelect }) {
           lat: place.geometry.location.lat(),
           lng: place.geometry.location.lng(),
         });
+        onCoordinatesSelect({
+          lat: place.geometry.location.lat(),
+          lng: place.geometry.location.lng(),
+        });
       } else {
         alert('No details available for input: \'' + place.name + '\'');
       }
@@ -71,6 +75,7 @@ export default function MapComponent({ onCoordinatesSelect }) {
     const lng = event.latLng.lng();
     setPanoramaCoords({ lat, lng });
     setStreetViewVisible(true);
+    onCoordinatesSelect({ lat, lng });
   };
 
   const handlePanoramaPositionChanged = () => {
@@ -87,17 +92,10 @@ export default function MapComponent({ onCoordinatesSelect }) {
     }
   };
 
-  const handleSubmit = () => {
-    if (panoramaCoords) {
-      console.log('Submitted Coordinates:', panoramaCoords);
-      // Additional actions can be performed here, such as sending coordinates to the backend
-    } else {
-      console.log('No coordinates selected.');
-    }
-  };
-
   const handleCloseStreetView = () => {
     setStreetViewVisible(false);
+    setPanoramaCoords(null);
+    onCoordinatesSelect(null);
   };
 
   if (loadError) return <div className="text-red-500">Error loading maps</div>;
@@ -140,25 +138,6 @@ export default function MapComponent({ onCoordinatesSelect }) {
           />
         )}
       </GoogleMap>
-      <div className="mt-4 flex justify-center">
-        <button
-          onClick={handleSubmit}
-          className="bg-green-500 text-white px-6 py-3 rounded-lg shadow hover:bg-green-600 transition duration-200"
-        >
-          Submit Coordinates
-        </button>
-      </div>
-      {panoramaCoords && (
-        <div className="mt-4 p-6 bg-white rounded-lg shadow-md max-w-4xl mx-auto">
-          <h2 className="text-2xl font-semibold mb-4 text-blue-700">Selected Coordinates:</h2>
-          <p className="text-lg text-gray-700">
-            <span className="font-medium text-black">Latitude:</span> {panoramaCoords.lat}
-          </p>
-          <p className="text-lg text-gray-700">
-            <span className="font-medium text-black">Longitude:</span> {panoramaCoords.lng}
-          </p>
-        </div>
-      )}
     </div>
   );
 }
