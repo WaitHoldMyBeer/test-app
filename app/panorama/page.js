@@ -32,11 +32,9 @@ export default function PanoramaPage() {
         },
         body: JSON.stringify({ latitude, longitude }),
       })
-        .then((res) => {
-          res.json()
-          console.log(res)
-        })
+        .then((res) => res.json())
         .then((data) => {
+          console.log(data) // check logs, panoramaUrl isn't there
           if (data.panoramaUrl) {
             setPanoramaUrl(data.panoramaUrl);
           }
