@@ -29,7 +29,7 @@ export default function PanoramaPage() {
     if (latitude && longitude) {
       setLoading(true);
       setError('');
-      fetch('https://us-central1-arboreal-lyceum-407420.cloudfunctions.net/get_panorama', {
+      fetch(process.env.NEXT_PUBLIC_CLOUD_FUNCTION_URL, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
