@@ -3,8 +3,11 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import ReactCrop from 'react-image-crop';
+import dynamic from 'next/dynamic';
 import 'react-image-crop/dist/ReactCrop.css';
+
+// Dynamically import ReactCrop to ensure it's only loaded on the client
+const ReactCrop = dynamic(() => import('react-image-crop'), { ssr: false });
 
 export default function PanoramaPage() {
   const router = useRouter();
@@ -12,8 +15,9 @@ export default function PanoramaPage() {
   const latitude = searchParams.get('latitude');
   const longitude = searchParams.get('longitude');
 
-  const [panoramaUrl, setPanoramaUrl] = useState('');
-  const [imageArray, setImageArray] = useState([]);
+  const [panoramaBase64, setPanoramaBase64] = useState('');
+  const [panoramaWidth, setPanoramaWidth] = useState(0);
+  const [panoramaHeight, setPanoramaHeight] = useState(0);
   const [crop, setCrop] = useState({ aspect: 16 / 9 });
   const [completedCrop, setCompletedCrop] = useState(null);
   const [imageRef, setImageRef] = useState(null);
@@ -32,13 +36,21 @@ export default function PanoramaPage() {
         },
         body: JSON.stringify({ latitude, longitude }),
       })
-        .then((res) => res.json())
-        .then((data) => {
-          if (data.panoramaUrl) {
-            setPanoramaUrl(data.panoramaUrl);
+        .then((res) => {
+          if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
           }
-          if (data.imageArray) {
-            setImageArray(data.imageArray);
+          return res.json();
+        })
+        .then((data) => {
+          if (data.panoramaBase64) {
+            setPanoramaBase64(`data:image/jpeg;base64,${data.panoramaBase64}`);
+          }
+          if (data.panoramaWidth) {
+            setPanoramaWidth(data.panoramaWidth);
+          }
+          if (data.panoramaHeight) {
+            setPanoramaHeight(data.panoramaHeight);
           }
           setLoading(false);
         })
@@ -78,7 +90,7 @@ export default function PanoramaPage() {
         <p className="text-red-500">{error}</p>
       ) : (
         <>
-          {panoramaUrl ? (
+          {panoramaBase64 ? (
             <div className="relative">
               <ReactCrop
                 crop={crop}
@@ -86,7 +98,7 @@ export default function PanoramaPage() {
                 onComplete={(c) => setCompletedCrop(c)}
               >
                 <img
-                  src={panoramaUrl}
+                  src={panoramaBase64}
                   alt="Street View Panorama"
                   className="max-w-full h-auto rounded-lg shadow-md"
                   onLoad={onLoad}
